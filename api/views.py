@@ -4,7 +4,19 @@ from rest_framework.decorators import api_view
 import pandas as pd
 import numpy as np
 import random
-import os
+from pathlib import Path
+
+# =========================
+# تحميل ملفات Excel مرة واحدة فقط
+# =========================
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+products_df = pd.read_excel(BASE_DIR / "products.xlsx")
+ratings_df = pd.read_excel(BASE_DIR / "ratings.xlsx")
+users_df = pd.read_excel(BASE_DIR / "users.xlsx")
+behavior_df = pd.read_excel(BASE_DIR / "behavior.xlsx")
+
 
 # =========================
 # 1) صفحة رئيسية بسيطة
@@ -14,38 +26,23 @@ def home(request):
 
 
 # =========================
-# 2) تحميل البيانات
-# =========================
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-def load_data():
-    products = pd.read_excel(os.path.join(BASE_DIR, "products.xlsx"))
-    users = pd.read_excel(os.path.join(BASE_DIR, "users.xlsx"))
-    ratings = pd.read_excel(os.path.join(BASE_DIR, "ratings.xlsx"))
-    behavior = pd.read_excel(os.path.join(BASE_DIR, "behavior.xlsx"))
-    return products, users, ratings, behavior
-
-
-# =========================
-# 3) API: المنتجات
+# 2) API: المنتجات
 # =========================
 @api_view(['GET'])
 def get_products(request):
-    products, users, ratings, behavior = load_data()
-    return Response(products.to_dict(orient="records"))
+    return Response(products_df.to_dict(orient="records"))
 
 
 # =========================
-# 4) API: المستخدمين (الدالة الناقصة)
+# 3) API: المستخدمين
 # =========================
 @api_view(['GET'])
 def users_list(request):
-    products, users, ratings, behavior = load_data()
-    return Response(users.to_dict(orient="records"))
+    return Response(users_df.to_dict(orient="records"))
 
 
 # =========================
-# 5) API: تسجيل السلوك
+# 4) API: تسجيل السلوك
 # =========================
 @api_view(['POST'])
 def log_behavior(request):
@@ -55,7 +52,7 @@ def log_behavior(request):
 
 
 # =========================
-# 6) الخوارزمية الجينية
+# 5) الخوارزمية الجينية
 # =========================
 
 def build_population(pop_size, length, products_df):
@@ -99,7 +96,7 @@ def fitness_function(chromosome, user_id, products_df, ratings_df, behavior_df):
         if not r.empty:
             score += r.iloc[0]['rating']
 
-        # 4) عقوبة بسيطة للسعر العالي
+        # 4)   للسعر العالي
         if price > products_df['price'].mean():
             score -= 0.5
 
@@ -161,18 +158,18 @@ def run_genetic_algorithm(user_id, products_df, users_df, ratings_df, behavior_d
 
 
 # =========================
-# 7) API: التوصيات
+# 6) API: التوصيات
 # =========================
 @api_view(['GET'])
 def get_recommendations(request, user_id):
-    products, users, ratings, behavior = load_data()
 
-    if user_id not in users['user_id'].values:
-        return Response(products.sample(5).to_dict(orient="records"))
+    # لو المستخدم غير موجود يرجع منتجات عشوائية
+    if user_id not in users_df['user_id'].values:
+        return Response(products_df.sample(5).to_dict(orient="records"))
 
     best = run_genetic_algorithm(
-        user_id, products, users, ratings, behavior
+        user_id, products_df, users_df, ratings_df, behavior_df
     )
 
-    rec_df = products[products['product_id'].isin(best)]
+    rec_df = products_df[products_df['product_id'].isin(best)]
     return Response(rec_df.to_dict(orient="records"))
