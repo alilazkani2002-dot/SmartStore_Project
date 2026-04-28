@@ -124,7 +124,8 @@ def mutate(chromosome, products_df, rate=0.1):
 
 
 def run_genetic_algorithm(user_id, products_df, users_df, ratings_df, behavior_df,
-                          pop_size=20, length=5, generations=30):
+                          pop_size=8, length=5, generations=10):
+
 
     population = build_population(pop_size, length, products_df)
 
