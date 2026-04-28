@@ -1,0 +1,199 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Store - Home</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <h2>Smart Store</h2>
+         <div>
+            <a href="/home/">Home</a>
+            <a href="/products/">Products</a>
+            <a href="/recommendations/">Recommendations</a>
+            <a href="/cart/">Cart</a>
+            <a href="#" onclick="goToLogin()">Login</a>
+            <a href="#" onclick="logout()">Logout</a>
+         </div>
+    </div>
+
+
+    <!-- User Info -->
+    <div id="user-info" class="user-info-box" 
+         style="background:#f8f8f8; padding:20px; margin:20px; border-radius:8px;">
+        <!-- سيتم تعبئته تلقائيًا -->
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>Welcome to Smart Store</h1>
+        <p>AI-powered product recommendations</p>
+    </div>
+
+    <!-- Recommendations Section -->
+    <div id="recommend-section" style="margin:20px;">
+        <!-- سيتم تعبئته تلقائيًا -->
+    </div>
+
+    <!-- Products Container -->
+    <h2 style="margin-left:20px;">All Products</h2>
+    <div class="container" id="products-container">
+        <!-- سيتم تعبئة المنتجات -->
+    </div>
+
+    <footer style="text-align: center; padding: 20px; margin-top: 30px; border-top: 1px solid #eee;">
+        <p>Smart Store Project</p>
+    </footer>
+
+    <script>
+        const userId = localStorage.getItem("user_id");
+
+        // ============================
+        // 1) عرض بيانات المستخدم
+        // ============================
+        if (userId) {
+            fetch("/api/users/")
+                .then(res => res.json())
+                .then(users => {
+                    const user = users.find(u => u.user_id == userId);
+
+                    if (user) {
+                        document.getElementById("user-info").innerHTML = `
+                            <h3>User Information</h3>
+                            <p><strong>User ID:</strong> ${user.user_id}</p>
+                            <p><strong>Age:</strong> ${user.age}</p>
+                            <p><strong>Location:</strong> ${user.location}</p>
+                        `;
+                    }
+                });
+        }
+
+        // ============================
+        // 2) عرض التوصيات
+        // ============================
+        if (userId) {
+            fetch(`/api/recommend/${userId}/`)
+                .then(res => res.json())
+                .then(recs => {
+                    const recSection = document.getElementById("recommend-section");
+
+                    recSection.innerHTML = `
+                        <h2>Recommended for You</h2>
+                        <div class="container" id="rec-container"></div>
+                    `;
+
+                    const recContainer = document.getElementById("rec-container");
+
+                    recs.forEach(product => {
+                        recContainer.innerHTML += `
+                            <div class="card ${product.category}">
+                                <img src="https://via.placeholder.com/150">
+                                <h3>Product #${product.product_id}</h3>
+                                <p>${product.category}</p>
+                                <p>$${product.price}</p>
+                            </div>
+                        `;
+                    });
+                });
+        }
+
+        // ============================
+        // 3) عرض جميع المنتجات
+        // ============================
+        fetch("/api/products/")
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById("products-container");
+
+                data.forEach(product => {
+                    container.innerHTML += `
+                        <div class="card ${product.category}">
+                            <img src="https://via.placeholder.com/150">
+                            <h3>Product #${product.product_id}</h3>
+                            <p>${product.category}</p>
+                            <p>$${product.price}</p>
+
+                            <button onclick="addToCart(${product.product_id}, '${product.category}', ${product.price})">
+                                Add to Cart
+                            </button>
+                        </div>
+                    `;
+                });
+            });
+
+        // ============================
+        // 4) إضافة للسلة + تسجيل السلوك
+        // ============================
+        function addToCart(id, category, price) {
+            let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+            cart.push({
+                product_id: id,
+                category: category,
+                price: price
+            });
+
+            localStorage.setItem("cart", JSON.stringify(cart));
+
+            alert("Product added to cart!");
+
+            fetch("/api/behavior/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: userId,
+                    product_id: id,
+                    action: "clicked"
+                })
+            });
+        }
+    </script>
+
+    <script>
+        function logout() {
+            localStorage.removeItem("user_id");
+            alert("You have been logged out.");
+            window.location.href = "/";
+        }
+    </script>
+
+    <script>
+    function logout() {
+        const userId = localStorage.getItem("user_id");
+
+        if (!userId) {
+            alert("You are already logged out.");
+            return;
+        }
+
+        localStorage.removeItem("user_id");
+        alert("You have been logged out.");
+        window.location.href = "/";
+    }
+
+    function goToLogin() {
+        const userId = localStorage.getItem("user_id");
+
+        if (userId) {
+            alert("You are already logged in.");
+            return;
+        }
+
+        window.location.href = "/";
+    }
+    </script>
+
+
+    
+
+</body>
+
+</html>

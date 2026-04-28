@@ -1,0 +1,139 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Store - Full Products List</title>
+
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <div class="navbar">
+        <h2>Smart Store</h2>
+            <div>
+                <a href="/home/">Home</a>
+                <a href="/products/">Products</a>
+                <a href="/recommendations/">Recommendations</a>
+                <a href="/cart/">Cart</a>
+                <a href="#" onclick="goToLogin()">Login</a>
+                <a href="#" onclick="logout()">Logout</a>
+            </div>
+    </div>
+
+
+    <!-- HEADER -->
+    <div class="header">
+        <h2>Our Complete Collection</h2>
+        <p class="pro">Welcome</p>
+    </div>
+
+    <!-- PRODUCTS CONTAINER -->
+    <div class="container" id="products-container">
+        <!-- سيتم تعبئة المنتجات من Django API -->
+    </div>
+
+    <footer style="text-align: center; padding: 20px; margin-top: 30px; border-top: 1px solid #eee;">
+        <p>Smart Store Project</p>
+    </footer>
+
+    <!-- FETCH PRODUCTS FROM API -->
+    <script>
+        fetch("/api/products/")
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById("products-container");
+
+                data.forEach(product => {
+                    container.innerHTML += `
+                        <div class="card">
+                            <img src="https://via.placeholder.com/300" alt="${product.category}">
+                            <h3>Product #${product.product_id}</h3>
+                            <p>${product.category}</p>
+
+                            <div class="product-rating">
+                                <span class="stars">★★★★☆</span>
+                                <span class="rating-value">(4.2)</span>
+                            </div>
+
+                            <button onclick="addToCart(${product.product_id}, '${product.category}', ${product.price})">
+                                Add to Cart
+                            </button>
+                        </div>
+                    `;
+                });
+            });
+
+        // ADD TO CART + LOG BEHAVIOR
+        function addToCart(id, category, price) {
+            let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+            cart.push({
+                product_id: id,
+                category: category,
+                price: price
+            });
+
+            localStorage.setItem("cart", JSON.stringify(cart));
+
+            alert("Product added to cart!");
+
+           fetch("/api/behavior/", {
+               method: "POST",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify({
+                   user_id: localStorage.getItem("user_id"),
+                   product_id: id,
+                   action: "clicked"
+                })
+            });
+
+        }
+    </script>
+
+    <script src="{% static 'script.js' %}"></script>
+
+    <script>
+        function logout() {
+            localStorage.removeItem("user_id");
+            alert("You have been logged out.");
+            window.location.href = "/";
+        }
+    </script>
+
+    <script>
+    function logout() {
+        const userId = localStorage.getItem("user_id");
+
+        if (!userId) {
+            alert("You are already logged out.");
+            return;
+        }
+
+        localStorage.removeItem("user_id");
+        alert("You have been logged out.");
+        window.location.href = "/";
+    }
+
+    function goToLogin() {
+        const userId = localStorage.getItem("user_id");
+
+        if (userId) {
+            alert("You are already logged in.");
+            return;
+        }
+
+        window.location.href = "/";
+    }
+    </script>
+
+
+
+</body>
+
+</html>

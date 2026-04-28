@@ -1,0 +1,201 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Store - Shopping Cart</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+
+<body>
+
+    <div class="navbar">
+    <h2>Smart Store</h2>
+        <div>
+            <a href="/home/">Home</a>
+            <a href="/products/">Products</a>
+            <a href="/recommendations/">Recommendations</a>
+            <a href="/cart/">Cart</a>
+            <a href="#" onclick="goToLogin()">Login</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </div>
+
+
+    <div class="header">
+        <h1>Your Shopping Cart</h1>
+        <p>Review your items before checkout</p>
+    </div>
+
+    <div class="cart-container">
+        <table class="cart-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Total</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="cart-body">
+                <!-- سيتم تعبئتها تلقائيًا -->
+            </tbody>
+        </table>
+
+        <div class="cart-summary">
+            <h3>Order Summary</h3>
+            <div class="summary-item">
+                <span>Subtotal:</span>
+                <span id="subtotal">$0</span>
+            </div>
+            <div class="summary-item">
+                <span>Shipping:</span>
+                <span>Free</span>
+            </div>
+            <hr>
+            <div class="summary-item total">
+                <span>Total:</span>
+                <span id="total">$0</span>
+            </div>
+
+            <button class="checkout-btn" id="checkoutBtn">Proceed to Checkout</button>
+        </div>
+    </div>
+
+    <footer style="text-align: center; padding: 20px; margin-top: 30px; border-top: 1px solid #eee;">
+        <p>Smart Store Project</p>
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            let cart = JSON.parse(localStorage.getItem("cart")) || [];
+            const tbody = document.getElementById("cart-body");
+            const subtotalSpan = document.getElementById("subtotal");
+            const totalSpan = document.getElementById("total");
+
+            tbody.innerHTML = "";
+            let subtotal = 0;
+
+            cart.forEach((item, index) => {
+                const rowTotal = item.price;
+                subtotal += rowTotal;
+
+                const row = `
+                    <tr>
+                        <td>
+                            <div class="cart-info">
+                                <img src="https://via.placeholder.com/80">
+                                <div>
+                                    <p>Product #${item.product_id}</p>
+                                    <small>${item.category}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>$${item.price}</td>
+                        <td><input type="number" value="1" min="1" class="qty-input" data-index="${index}"></td>
+                        <td class="row-total">$${rowTotal}</td>
+                        <td><button class="remove-btn" data-index="${index}">Remove</button></td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+            subtotalSpan.textContent = "$" + subtotal;
+            totalSpan.textContent = "$" + subtotal;
+
+            // إزالة منتج
+            document.querySelectorAll(".remove-btn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    const index = e.target.getAttribute("data-index");
+                    cart.splice(index, 1);
+                    localStorage.setItem("cart", JSON.stringify(cart));
+                    location.reload();
+                });
+            });
+
+            // تحديث الكمية
+            document.querySelectorAll(".qty-input").forEach(input => {
+                input.addEventListener("change", (e) => {
+                    const index = e.target.getAttribute("data-index");
+                    const qty = parseInt(e.target.value);
+                    const price = cart[index].price;
+
+                    const newTotal = qty * price;
+                    e.target.closest("tr").querySelector(".row-total").textContent = "$" + newTotal;
+
+                    let newSubtotal = 0;
+                    document.querySelectorAll(".row-total").forEach(rt => {
+                        newSubtotal += parseFloat(rt.textContent.replace("$", ""));
+                    });
+
+                    subtotalSpan.textContent = "$" + newSubtotal;
+                    totalSpan.textContent = "$" + newSubtotal;
+                });
+            });
+
+            // إتمام الشراء
+            document.getElementById("checkoutBtn").addEventListener("click", () => {
+                const userId = localStorage.getItem("user_id");
+
+                cart.forEach(item => {
+                    fetch("/api/behavior/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            product_id: item.product_id,
+                            action: "purchased"
+                        })
+                    });
+                });
+
+                alert("Thank you for your purchase!");
+                localStorage.removeItem("cart");
+                location.reload();
+            });
+        });
+    </script>
+
+    <script>
+        function logout() {
+            localStorage.removeItem("user_id");
+            alert("You have been logged out.");
+            window.location.href = "/";
+        }
+    </script>
+
+    <script>
+    function logout() {
+        const userId = localStorage.getItem("user_id");
+
+        if (!userId) {
+            alert("You are already logged out.");
+            return;
+        }
+
+        localStorage.removeItem("user_id");
+        alert("You have been logged out.");
+        window.location.href = "/";
+    }
+
+    function goToLogin() {
+        const userId = localStorage.getItem("user_id");
+
+        if (userId) {
+            alert("You are already logged in.");
+            return;
+        }
+
+        window.location.href = "/";
+    }
+    </script>
+
+
+
+</body>
+
+</html>
