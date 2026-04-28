@@ -164,7 +164,7 @@ def run_genetic_algorithm(user_id, products_df, users_df, ratings_df, behavior_d
 @api_view(['GET'])
 def get_recommendations(request, user_id):
 
-    # لو المستخدم غير موجود يرجع منتجات عشوائية
+    # اذا كان المستخدم غير موجود نعيد منتجات عشوائية
     if user_id not in users_df['user_id'].values:
         return Response(products_df.sample(5).to_dict(orient="records"))
 
