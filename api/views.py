@@ -95,7 +95,7 @@ def fitness_function(chromosome, user_id, products_df, ratings_df, behavior_df):
             score += 1.5
 
         # 3) مكافأة التقييمات
-        r = user_ratings[user_ratings['product_id'] == pid]
+        r = user_ratings[user_ratings['product_id'].astype(str) == str(pid)]
         if not r.empty:
             score += r.iloc[0]['rating']
 
